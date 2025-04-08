@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 
 export default function Header() {
   const router = useRouter();
@@ -47,10 +48,13 @@ export default function Header() {
           {/* Logo and Name Section */}
           <div className="flex items-center lg:flex-1">
             <Link href="/" className="flex items-center space-x-2 group">
-              <img
+              <Image
                 className="h-10 w-auto transition-transform duration-300 group-hover:scale-110"
                 src="/logo.png"
                 alt="Easy Parkers Logo"
+                width={40} // Set appropriate width
+                height={40} // Set appropriate height
+                priority // Ensures the image is loaded quickly
               />
               <span className="text-xl font-bold">
                 <span className="text-black group-hover:text-gray-700 transition-colors duration-300">
