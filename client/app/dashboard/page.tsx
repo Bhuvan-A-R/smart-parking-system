@@ -133,7 +133,7 @@ export default function DashboardPage() {
         )}
 
         {/* User Role: Admin or Sub-Admin */}
-        {user.role !== "user" && (
+        {user && (
           <div>
             <div>
               <h3 className="text-xl font-bold mb-4 text-black">
