@@ -46,6 +46,10 @@ export default function VerifyOtpPage() {
 
   return (
     <AuthLayout title="Verify OTP" notification={notification}>
+      <p className="text-center text-gray-600 mb-6">
+          Please check your inbox or spam folder to find the OTP and verify your
+          account.
+        </p>
       <form onSubmit={handleVerifyOtp} className="space-y-6">
         <div>
           <label
