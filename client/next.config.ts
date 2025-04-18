@@ -11,6 +11,14 @@ const nextConfig = {
   experimental: {
     allowedDevOrigins: allowedOrigins, // Dynamically generated origins
   },
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: "http://192.168.29.67:5000/api/:path*", // Proxy to backend
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;
