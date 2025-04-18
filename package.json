@@ -1,0 +1,23 @@
+{
+  "name": "smart-parking-system",
+  "version": "1.0.0",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Bhuvan-A-R/smart-parking-system.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Bhuvan-A-R/smart-parking-system/issues"
+  },
+  "homepage": "https://github.com/Bhuvan-A-R/smart-parking-system#readme",
+  "description": ""
+}
