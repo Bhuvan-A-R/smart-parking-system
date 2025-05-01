@@ -7,6 +7,7 @@ export function middleware(req: NextRequest) {
   // Define protected routes
   const protectedRoutes = ["/dashboard", "/profile", "/settings"];
 
+  // Check if the request matches any protected route
   if (protectedRoutes.some((route) => req.nextUrl.pathname.startsWith(route))) {
     if (!token) {
       // Redirect to login if no token is found
@@ -19,5 +20,5 @@ export function middleware(req: NextRequest) {
 
 // Apply middleware to specific routes
 export const config = {
-  matcher: ["/dashboard/:path*", "/profile/:path*", "/settings/:path*"],
+  matcher: ["/dashboard/:path*", "/profile/:path*", "/settings/:path*"], // Protect all specified routes
 };

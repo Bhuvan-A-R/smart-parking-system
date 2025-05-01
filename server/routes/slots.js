@@ -241,7 +241,7 @@ router.post("/pay/:slotId", async (req, res) => {
     slot.status = "free";
     slot.userId = null;
     slot.bookedAt = null;
-    slot.paymentStatus = "approved";
+    slot.paymentStatus = "pending";
     await slot.save();
 
     res.json({ message: "Payment successful", amount, duration });
@@ -267,6 +267,48 @@ router.get("/history/:userId", async (req, res) => {
   } catch (err) {
     console.error("Error fetching payment history:", err);
     res.status(500).json({ error: "Failed to fetch payment history" });
+  }
+});
+
+// Process payment for a slot
+router.post("/process-payment", async (req, res) => {
+  const { slotId, userId, amount, duration } = req.body;
+
+  try {
+    // Find the slot by ID
+    const slot = await Slot.findOne({ id: slotId });
+
+    if (!slot) {
+      return res.status(404).json({ error: "Slot not found" });
+    }
+
+    // Add the new payment to the paymentHistory array
+    const newPayment = {
+      userId,
+      slotId,
+      amount,
+      duration,
+      paidAt: new Date(),
+    };
+
+    slot.paymentHistory.push(newPayment);
+
+    // Increment the totalMoneyCollected field
+    slot.totalMoneyCollected += amount;
+
+    // Mark the slot as free
+    slot.status = "free";
+    slot.userId = null;
+    slot.bookedAt = null;
+    slot.paymentStatus = "approved";
+
+    // Save the updated slot
+    await slot.save();
+
+    res.json({ message: "Payment processed successfully", slot });
+  } catch (err) {
+    console.error("Error processing payment:", err);
+    res.status(500).json({ error: "Failed to process payment" });
   }
 });
 

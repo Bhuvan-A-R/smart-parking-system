@@ -11,8 +11,8 @@ const http = require("http");
 const socketIo = require("socket.io");
 const axios = require("axios");
 const ParkingSlot = require("./models/ParkingSlot"); // Adjust the path as needed
-
 const app = express();
+const Slot = require("./models/Slot");
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
@@ -24,10 +24,10 @@ const io = socketIo(server, {
 // Allow requests from your frontend origin
 app.use(
   cors({
-    origin: ["http://192.168.29.67:3000"], // Add your frontend origin
+    origin: "http://192.168.29.67:3000", // Allow requests from your frontend
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
+    credentials: true, // Allow cookies to be sent with requests
   })
 );
 
@@ -143,17 +143,82 @@ app.get("/api/admin/slots", async (req, res) => {
 
 app.get("/api/admin/payments", async (req, res) => {
   try {
-    const payments = await Payment.find().sort({ date: -1 }).limit(5); // Ensure `Payment` is defined
-    const totalMoneyCollected = await Payment.aggregate([
-      { $group: { _id: null, total: { $sum: "$amount" } } },
+    // Calculate the total money collected dynamically
+    const totalMoneyCollected = await Slot.aggregate([
+      { $unwind: "$paymentHistory" }, // Flatten the paymentHistory array
+      { $group: { _id: null, total: { $sum: "$paymentHistory.amount" } } }, // Sum the amounts
     ]);
+
+    // Fetch the last 5 payments from the paymentHistory array
+    const lastFivePayments = await Slot.aggregate([
+      { $unwind: "$paymentHistory" }, // Flatten the paymentHistory array
+      { $sort: { "paymentHistory.paidAt": -1 } }, // Sort by paidAt in descending order
+      { $limit: 5 }, // Limit to the last 5 payments
+      {
+        $project: {
+          _id: 0,
+          id: "$paymentHistory.slotId",
+          amount: "$paymentHistory.amount",
+          method: "N/A", // Placeholder for payment method
+          date: "$paymentHistory.paidAt",
+        },
+      },
+    ]);
+
     res.json({
-      lastFivePayments: payments,
+      lastFivePayments,
       totalMoneyCollected: totalMoneyCollected[0]?.total || 0,
     });
   } catch (err) {
     console.error("Error fetching payments:", err);
     res.status(500).json({ error: "Failed to fetch payments" });
+  }
+});
+
+app.post("/api/admin/payments/add", async (req, res) => {
+  const { slotId, amount, userId, duration } = req.body;
+
+  try {
+    // Find the parking slot by ID
+    const slot = await Slot.findOne({ id: slotId });
+
+    if (!slot) {
+      return res.status(404).json({ error: "Slot not found" });
+    }
+
+    // Add the new payment to the paymentHistory array
+    const newPayment = {
+      userId,
+      slotId,
+      amount,
+      duration,
+      paidAt: new Date(),
+    };
+
+    slot.paymentHistory.push(newPayment);
+
+    // Increment the totalMoneyCollected field for this slot
+    slot.totalMoneyCollected += amount;
+
+    // Save the updated slot
+    await slot.save();
+
+    // Recalculate the totalMoneyCollected across all slots
+    const totalMoneyCollected = await Slot.aggregate([
+      { $unwind: "$paymentHistory" }, // Flatten the paymentHistory array
+      { $group: { _id: null, total: { $sum: "$paymentHistory.amount" } } }, // Sum the amounts
+    ]);
+
+    // Update the totalMoneyCollected field in the database
+    await Slot.updateMany(
+      {},
+      { $set: { totalMoneyCollected: totalMoneyCollected[0]?.total || 0 } }
+    );
+
+    res.status(200).json({ message: "Payment added successfully", slot });
+  } catch (err) {
+    console.error("Error adding payment:", err);
+    res.status(500).json({ error: "Failed to add payment" });
   }
 });
 

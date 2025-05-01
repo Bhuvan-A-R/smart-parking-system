@@ -25,7 +25,7 @@ const SlotGrid: React.FC<{ userRole: string }> = ({ userRole }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [showAssignPopover, setShowAssignPopover] = useState(false);
   const [showPaymentPopover, setShowPaymentPopover] = useState(false);
   const [showBookPopover, setShowBookPopover] = useState(false);
@@ -145,6 +145,49 @@ const SlotGrid: React.FC<{ userRole: string }> = ({ userRole }) => {
     }
   };
 
+  const calculateAmount = (slotId: string): number => {
+    // Find the slot by ID
+    const slot = slots.find((s) => s.id === slotId);
+
+    if (!slot) {
+      console.error("Slot not found");
+      return 0;
+    }
+
+    // Calculate amount based on duration and vehicle type
+    const duration = calculateDuration(slotId);
+    const ratePerHour = slot.vehicleType === "bike" ? 10 : 20; // Example rates
+    const amount = duration * ratePerHour;
+
+    return amount;
+  };
+
+  const calculateDuration = (slotId: string): number => {
+    // Find the slot by ID
+    const slot = slots.find((s) => s.id === slotId);
+
+    if (!slot || !slot.bookedAt) {
+      console.error("Slot not found or not booked");
+      return 0;
+    }
+
+    // Calculate the duration in hours
+    const bookedAt = new Date(slot.bookedAt).getTime();
+    const now = Date.now();
+    const durationInHours = Math.ceil((now - bookedAt) / (1000 * 60 * 60)); // Convert milliseconds to hours
+
+    return durationInHours;
+  };
+
+  const fetchSlots = async () => {
+    try {
+      const slotsResponse = await axios.get(`${API_BASE_URL}/api/slots`);
+      setSlots(slotsResponse.data);
+    } catch (err) {
+      console.error("Error fetching slots:", err);
+    }
+  };
+
   const handleApprovePayment = async (slotId: string) => {
     if (!paymentMethod) {
       showNotification("Please select a payment method.", "error");
@@ -152,24 +195,25 @@ const SlotGrid: React.FC<{ userRole: string }> = ({ userRole }) => {
     }
 
     try {
-      const res = await axios.post(
-        `${API_BASE_URL}/api/slots/approve-payment/${slotId}`,
+      const paymentResponse = await axios.post(
+        `${API_BASE_URL}/api/admin/payments/add`,
         {
+          slotId,
+          amount: calculateAmount(slotId),
+          userId: "647fdb7c0c4f3524efa97ba0", // Replace with the actual user ID
+          duration: calculateDuration(slotId),
           paymentMethod,
         }
       );
-      const { amount, duration } = res.data;
 
-      showNotification(
-        `Payment approved! Amount: ₹${amount} for ${duration} hours.`,
-        "success"
-      );
-      setPaymentMethod(null);
+      console.log("Payment approved:", paymentResponse.data);
+      showNotification("Payment approved and slot freed!", "success");
+
+      setPaymentMethod(""); // Reset payment method
       setShowPaymentPopover(false);
 
       // Refresh slots
-      const slotsRes = await axios.get(`${API_BASE_URL}/api/slots`);
-      setSlots(slotsRes.data);
+      fetchSlots();
     } catch (err) {
       console.error("Error approving payment:", err);
       showNotification("Failed to approve payment.", "error");
@@ -275,7 +319,7 @@ const SlotGrid: React.FC<{ userRole: string }> = ({ userRole }) => {
               </p>
 
               {/* Admin Actions */}
-              {userRole === "admin" && !isAssigned && (
+              {userRole === "admin" && slot.status === "free" && (
                 <button
                   onClick={() => {
                     setSelectedSlot(slot.id);
@@ -284,18 +328,6 @@ const SlotGrid: React.FC<{ userRole: string }> = ({ userRole }) => {
                   className="bg-blue-500 px-2 py-1 rounded mt-2 text-white"
                 >
                   Assign Slot
-                </button>
-              )}
-
-              {userRole === "admin" && isAssigned && !isBooked && (
-                <button
-                  onClick={() => {
-                    setSelectedSlot(slot.id);
-                    setShowBookPopover(true);
-                  }}
-                  className="bg-purple-500 px-2 py-1 rounded mt-2 text-white"
-                >
-                  Book Slot
                 </button>
               )}
 
@@ -311,42 +343,17 @@ const SlotGrid: React.FC<{ userRole: string }> = ({ userRole }) => {
                 </button>
               )}
 
-              {userRole === "admin" && isPaymentApproved && (
+              {/* {userRole === "admin" && isPaymentApproved && (
                 <button
                   onClick={() => {
                     setSelectedSlot(slot.id);
-                    setShowPaymentPopover(true); // Show payment popover again
-                  }}
-                  className="bg-yellow-500 px-2 py-1 rounded mt-2 text-white"
-                >
-                  Approve Payment Again
-                </button>
-              )}
-
-              {/* User Actions */}
-              {userRole === "user" && slot.status === "free" && (
-                <button
-                  onClick={() => {
-                    setSelectedSlot(slot.id);
-                    setShowBookPopover(true);
+                    setShowAssignPopover(true); // Allow assigning the slot again
                   }}
                   className="bg-green-500 px-2 py-1 rounded mt-2 text-white"
                 >
-                  Book Slot
+                  Assign Slot Again
                 </button>
-              )}
-
-              {userRole === "user" && isBooked && isPaymentPending && (
-                <button
-                  onClick={() => {
-                    setSelectedSlot(slot.id);
-                    setShowPaymentPopover(true);
-                  }}
-                  className="bg-yellow-500 px-2 py-1 rounded mt-2 text-white"
-                >
-                  Pay Now
-                </button>
-              )}
+              )} */}
             </div>
           );
         })}
@@ -462,7 +469,7 @@ const SlotGrid: React.FC<{ userRole: string }> = ({ userRole }) => {
               Approve Payment for Slot {selectedSlot}
             </h3>
             <select
-              value={paymentMethod || ""}
+              value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value)}
               className="border p-2 rounded w-full mb-4 text-black"
             >
@@ -479,9 +486,9 @@ const SlotGrid: React.FC<{ userRole: string }> = ({ userRole }) => {
               </button>
               <button
                 onClick={() => handleApprovePayment(selectedSlot!)}
-                className="bg-green-500 text-white px-4 py-2 rounded"
+                className="bg-blue-500 text-white px-4 py-2 rounded"
               >
-                Complete Payment
+                Approve Payment
               </button>
             </div>
           </div>

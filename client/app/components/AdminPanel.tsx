@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { io } from "socket.io-client";
 import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -20,46 +21,96 @@ ChartJS.register(
   Legend
 );
 
+const socket = io(
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000"
+);
+
+const formatToIST = (utcDate: string): string => {
+  const date = new Date(utcDate);
+  return date.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+};
+
 const AdminPanel: React.FC = () => {
-  const [hours, setHours] = useState<number>(0);
-  const [fee, setFee] = useState<number | null>(null);
-  const [totalSlots, setTotalSlots] = useState<number>(0);
   const [totalMoneyCollected, setTotalMoneyCollected] = useState<number>(0);
   const [paymentHistory, setPaymentHistory] = useState<
-    { id: string; amount: number; method: string; date: string }[]
+    {
+      id: string;
+      amount: number;
+      method: string;
+      date: string;
+      userName: string;
+    }[]
   >([]);
+
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   useEffect(() => {
     const fetchAdminData = async () => {
       try {
-        const slotsRes = await axios.get("/api/admin/slots");
-        setTotalSlots(slotsRes.data.totalSlots);
+        const paymentsRes = await axios.get(
+          `${API_BASE_URL}/api/admin/payments`
+        );
+
+        setTotalMoneyCollected(paymentsRes.data.totalMoneyCollected);
+        setPaymentHistory(paymentsRes.data.lastFivePayments);
       } catch (err) {
         console.error("Error fetching admin data:", err);
-        alert("Failed to fetch admin data. Please try again later.");
       }
     };
 
     fetchAdminData();
+
+    // Listen for real-time updates
+    socket.on("paymentUpdated", (data) => {
+      console.log("Real-time update received:", data);
+      setTotalMoneyCollected(data.totalMoneyCollected);
+      setPaymentHistory((prev) => [data.newPayment, ...prev.slice(0, 4)]); // Add new payment and keep the last 5
+    });
+
+    return () => {
+      socket.off("paymentUpdated");
+    };
   }, []);
 
-  const calculateFee = async () => {
-    try {
-      const res = await axios.post("/api/pricing/calculate-fee", { hours });
-      setFee(res.data.fee);
-    } catch (err) {
-      console.error("Error calculating fee:", err);
-    }
-  };
+  // Separate data for cash and UPI
+  const cashPayments = paymentHistory.filter(
+    (payment) => payment.method === "cash"
+  );
+  const upiPayments = paymentHistory.filter(
+    (payment) => payment.method === "upi"
+  );
+
+  // Generate unique dates for the labels
+  const uniqueDates = Array.from(
+    new Set(paymentHistory.map((payment) => formatToIST(payment.date)))
+  );
+
+  // Generate data for cash and UPI payments
+  const cashData = uniqueDates.map((date) => {
+    const payment = cashPayments.find((p) => formatToIST(p.date) === date);
+    return payment ? payment.amount : 0;
+  });
+
+  const upiData = uniqueDates.map((date) => {
+    const payment = upiPayments.find((p) => formatToIST(p.date) === date);
+    return payment ? payment.amount : 0;
+  });
 
   const paymentChartData = {
-    labels: paymentHistory.map((payment) => payment.date),
+    labels: uniqueDates,
     datasets: [
       {
-        label: "Payment Amount (₹)",
-        data: paymentHistory.map((payment) => payment.amount),
-        backgroundColor: "rgba(54, 162, 235, 0.6)",
-        borderColor: "rgba(54, 162, 235, 1)",
+        label: "Cash Payments (₹)",
+        data: cashData,
+        backgroundColor: "rgba(75, 192, 192, 0.6)",
+        borderColor: "rgba(75, 192, 192, 1)",
+        borderWidth: 1,
+      },
+      {
+        label: "UPI Payments (₹)",
+        data: upiData,
+        backgroundColor: "rgba(255, 99, 132, 0.6)",
+        borderColor: "rgba(255, 99, 132, 1)",
         borderWidth: 1,
       },
     ],
@@ -73,41 +124,45 @@ const AdminPanel: React.FC = () => {
       },
       title: {
         display: true,
-        text: "Last 5 Payments",
+        text: "Payment Visualization (Cash vs UPI)",
       },
+    },
+    animation: {
+      duration: 1000, // Animation duration in milliseconds
+      easing: "easeInOutQuad" as const, // Animation easing function
     },
   };
 
   return (
-    <div className="p-6 bg-white rounded shadow space-y-6">
-      <h2 className="text-2xl font-bold mb-4">Admin Panel</h2>
-
-      {/* Total Slots and Money Collected */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="p-4 bg-gray-100 rounded shadow">
-          <h3 className="text-lg font-bold">Total Slots</h3>
-          <p className="text-2xl font-semibold">{totalSlots}</p>
-        </div>
-        <div className="p-4 bg-gray-100 rounded shadow">
-          <h3 className="text-lg font-bold">Total Money Collected</h3>
-          <p className="text-2xl font-semibold">₹{totalMoneyCollected}</p>
-        </div>
+    <div className="p-6 bg-white rounded shadow-md">
+      {/* Total Money Collected */}
+      <div className="mb-6">
+        <h3 className="text-lg font-bold text-black">Total Money Collected</h3>
+        <p className="text-2xl font-semibold text-blue-600">
+          ₹{totalMoneyCollected}
+        </p>
       </div>
 
       {/* Payment History */}
       <div>
-        <h3 className="text-xl font-bold mb-4">Last 5 Payments</h3>
-        <ul className="space-y-2">
-          {paymentHistory.map((payment) => (
+        <h3 className="text-xl font-bold mb-4 text-black">Last 5 Payments</h3>
+        <ul>
+          {paymentHistory.map((payment, index) => (
             <li
-              key={payment.id}
-              className="p-4 bg-gray-100 rounded shadow flex justify-between items-center"
+              key={`${payment.id}-${index}`}
+              className="mb-5 p-4 bg-gray-100 rounded shadow flex justify-between items-center"
             >
               <div>
-                <p className="text-sm text-gray-600">{payment.date}</p>
-                <p className="text-lg font-semibold">₹{payment.amount}</p>
+                <p className="text-sm text-gray-600">
+                  {formatToIST(payment.date)}
+                </p>
+                <p className="text-lg font-semibold text-black">
+                  ₹{payment.amount}
+                </p>
               </div>
-              <span className="text-sm text-gray-500">{payment.method}</span>
+              <p className="text-sm text-right font-bold text-red-600">
+                {payment.method.toUpperCase()}
+              </p>
             </li>
           ))}
         </ul>
@@ -115,7 +170,9 @@ const AdminPanel: React.FC = () => {
 
       {/* Payment Chart */}
       <div>
-        <h3 className="text-xl font-bold mb-4">Payment Visualization</h3>
+        <h3 className="text-xl font-bold mb-4 text-black">
+          Payment Visualization
+        </h3>
         <Bar data={paymentChartData} options={paymentChartOptions} />
       </div>
     </div>
