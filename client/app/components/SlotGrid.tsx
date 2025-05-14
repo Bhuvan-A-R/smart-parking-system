@@ -195,18 +195,14 @@ const SlotGrid: React.FC<{ userRole: string }> = ({ userRole }) => {
     }
 
     try {
-      const paymentResponse = await axios.post(
-        `${API_BASE_URL}/api/admin/payments/add`,
-        {
-          slotId,
-          amount: calculateAmount(slotId),
-          userId: "647fdb7c0c4f3524efa97ba0", // Replace with the actual user ID
-          duration: calculateDuration(slotId),
-          paymentMethod,
-        }
-      );
+      await axios.post(`${API_BASE_URL}/api/admin/payments/add`, {
+        slotId,
+        amount: calculateAmount(slotId),
+        userId: "647fdb7c0c4f3524efa97ba0", // Replace with the actual user ID
+        duration: calculateDuration(slotId),
+        paymentMethod,
+      });
 
-      console.log("Payment approved:", paymentResponse.data);
       showNotification("Payment approved and slot freed!", "success");
 
       setPaymentMethod(""); // Reset payment method
@@ -398,7 +394,7 @@ const SlotGrid: React.FC<{ userRole: string }> = ({ userRole }) => {
 
       {/* Assign Slot Popover */}
       {showAssignPopover && (
-        <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-96">
             <h3 className="text-xl font-bold mb-4 text-black">
               Assign Slot {selectedSlot}
@@ -435,7 +431,7 @@ const SlotGrid: React.FC<{ userRole: string }> = ({ userRole }) => {
 
       {/* Book Slot Popover */}
       {showBookPopover && (
-        <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-96">
             <h3 className="text-xl font-bold mb-4 text-black">
               Book Slot {selectedSlot}
@@ -463,7 +459,7 @@ const SlotGrid: React.FC<{ userRole: string }> = ({ userRole }) => {
 
       {/* Payment Popover */}
       {showPaymentPopover && (
-        <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-96">
             <h3 className="text-xl font-bold mb-4 text-black">
               Approve Payment for Slot {selectedSlot}

@@ -22,7 +22,7 @@ ChartJS.register(
 );
 
 const socket = io(
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000"
+  process.env.NEXT_PUBLIC_API_BASE_URL || "https://easy-parkers-sps.vercel.app:5000"
 );
 
 const formatToIST = (utcDate: string): string => {
@@ -35,12 +35,19 @@ const AdminPanel: React.FC = () => {
   const [paymentHistory, setPaymentHistory] = useState<
     {
       id: string;
+      paymentId: string;
       amount: number;
       method: string;
       date: string;
       userName: string;
     }[]
   >([]);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(
+    null
+  );
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
@@ -133,6 +140,43 @@ const AdminPanel: React.FC = () => {
     },
   };
 
+  const handleDownloadClick = (paymentId: string) => {
+    setSelectedPaymentId(paymentId);
+    setShowModal(true); // Show the modal to collect user details
+  };
+
+  const handleDownloadInvoice = async () => {
+    if (!userName || !userEmail) {
+      alert("Please enter your name and email.");
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `/api/admin/generate-invoice/${selectedPaymentId}`,
+        { userName, userEmail },
+        { responseType: "blob" } // Ensure the response is treated as a file
+      );
+
+      // Create a link to download the file
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute(
+        "download",
+        `invoice-${selectedPaymentId || "unknown"}.pdf`
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      setShowModal(false); // Close the modal after download
+    } catch (err) {
+      console.error("Error downloading invoice:", err);
+      alert("Failed to download invoice.");
+    }
+  };
+
   return (
     <div className="p-6 bg-white rounded shadow-md">
       {/* Total Money Collected */}
@@ -149,7 +193,7 @@ const AdminPanel: React.FC = () => {
         <ul>
           {paymentHistory.map((payment, index) => (
             <li
-              key={`${payment.id}-${index}`}
+              key={`${payment.paymentId}-${index}`}
               className="mb-5 p-4 bg-gray-100 rounded shadow flex justify-between items-center"
             >
               <div>
@@ -163,10 +207,64 @@ const AdminPanel: React.FC = () => {
               <p className="text-sm text-right font-bold text-red-600">
                 {payment.method.toUpperCase()}
               </p>
+              <button
+                onClick={() => handleDownloadClick(payment.paymentId)}
+                className="bg-blue-500 text-white px-4 py-2 rounded"
+              >
+                Download Invoice
+              </button>
             </li>
           ))}
         </ul>
       </div>
+
+      {/* Modal for User Details */}
+      {showModal && (
+        <div
+          className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50"
+          onClick={() => setShowModal(false)} // Close popover when clicking outside
+        >
+          <div
+            className="absolute bg-white p-4 rounded shadow-lg w-80"
+            style={{
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+            }}
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+          >
+            <h3 className="text-lg text-black font-bold mb-4">Enter Your Details</h3>
+            <input
+              type="text"
+              placeholder="Your Name"
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              className="border p-2 text-black rounded w-full mb-4"
+            />
+            <input
+              type="email"
+              placeholder="Your Email"
+              value={userEmail}
+              onChange={(e) => setUserEmail(e.target.value)}
+              className="border p-2 text-black rounded w-full mb-4"
+            />
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={handleDownloadInvoice}
+                className="bg-green-500 text-white px-4 py-2 rounded"
+              >
+                Download Invoice
+              </button>
+              <button
+                onClick={() => setShowModal(false)}
+                className="bg-red-500 text-white px-4 py-2 rounded"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Payment Chart */}
       <div>

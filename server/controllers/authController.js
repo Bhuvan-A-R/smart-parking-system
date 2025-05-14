@@ -44,29 +44,21 @@ exports.registerUser = async (req, res) => {
 };
 
 exports.verifyOtp = async (req, res) => {
-  const { userId, otp } = req.body;
+  const { email, otp } = req.body;
 
   try {
-    // Find the user by ID
-    const user = await User.findById(userId);
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Check if OTP is valid
     if (user.otp !== otp || user.otpExpiry < Date.now()) {
       return res.status(400).json({ message: "Invalid or expired OTP" });
     }
 
-    // Clear OTP and mark the user as verified
-    user.otp = undefined;
-    user.otpExpiry = undefined;
-    user.otpVerified = true;
-    await user.save();
-
-    res.status(200).json({ message: "Email verified successfully" });
+    res.status(200).json({ message: "OTP verified successfully" });
   } catch (err) {
-    console.error("Error in verifyOtp:", err); // Log the error for debugging
+    console.error("Error in verifyOtp:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
@@ -145,16 +137,13 @@ exports.forgotPassword = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Generate OTP
     const otp = crypto.randomInt(100000, 999999).toString();
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // OTP valid for 10 minutes
 
-    // Save OTP and expiry to the user
     user.otp = otp;
     user.otpExpiry = otpExpiry;
     await user.save();
 
-    // Send OTP to user's email
     await sendEmail(
       email,
       "Reset Your Password",
@@ -177,12 +166,10 @@ exports.resetPassword = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Validate OTP
     if (user.otp !== otp || user.otpExpiry < Date.now()) {
       return res.status(400).json({ message: "Invalid or expired OTP" });
     }
 
-    // Update password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
     user.otp = undefined;

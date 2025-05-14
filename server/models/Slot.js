@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { v4: uuidv4 } = require("uuid");
 
 const slotSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
@@ -15,6 +16,7 @@ const slotSchema = new mongoose.Schema({
   totalMoneyCollected: { type: Number, default: 0 },
   paymentHistory: [
     {
+      paymentId: { type: String, default: uuidv4 },
       userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
       slotId: String,
       amount: Number,
