@@ -12,7 +12,7 @@ export default function HomePage() {
       >
         <div className="bg-white bg-opacity-80 p-6 sm:p-8 rounded-lg shadow-lg text-center w-full max-w-sm sm:max-w-md lg:max-w-xl">
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-4 sm:mb-6">
-            Welcome to <span className="text-blue-600">Smart Parking System</span>
+            Welcome to <span className="text-blue-600">Easy Parkers - Smart Parking System</span>
           </h1>
           <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8">
             Manage parking efficiently with our modern platform.

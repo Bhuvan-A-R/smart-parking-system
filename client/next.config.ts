@@ -1,4 +1,4 @@
-const baseUrl = "https://easy-parkers-sps.vercel.app"; // Updated to use localhost
+const baseUrl = "http://localhost"; // Updated to use localhost
 const ports = [3000, 5000]; // Add the ports you want to allow
 
 // Generate allowed origins for both the base URL and localhost
@@ -14,7 +14,7 @@ const nextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "https://easy-parkers-sps.vercel.app:5000/api/:path*", // Proxy to backend
+        destination: "http://localhost:5000/api/:path*", // Proxy to backend
       },
     ];
   },

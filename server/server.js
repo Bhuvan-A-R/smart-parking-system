@@ -16,7 +16,7 @@ const Slot = require("./models/Slot");
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "https://easy-parkers-sps.vercel.app:3000",
+    origin: "http://localhost:3000",
     methods: ["GET", "POST"],
   },
 });
@@ -24,7 +24,7 @@ const io = socketIo(server, {
 // Allow requests from your frontend origin
 app.use(
   cors({
-    origin: "https://easy-parkers-sps.vercel.app:3000", // Allow requests from your frontend
+    origin: "http://localhost:3000", // Allow requests from your frontend
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true, // Allow cookies to be sent with requests
