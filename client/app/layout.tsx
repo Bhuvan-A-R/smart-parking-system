@@ -1,5 +1,7 @@
 import "./globals.css";
-import Header from "./components/Header";
+// import Header from "./components/Header";
+import HeaderMaintenance from "./components/Header-Maintenance";
+
 
 export const metadata = {
   title: "Smart Parking System",
@@ -24,7 +26,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link rel="manifest" href="/site.webmanifest" />
       </head>
       <body className="bg-[#F1F1F1] text-[#21209C]">
-          <Header />
+        <HeaderMaintenance />
           <main className="">{children}</main> {/* Render child pages */}
       </body>
     </html>
