@@ -1,6 +1,6 @@
 import "./globals.css";
-import Header from "./components/Header";
-// import HeaderMaintenance from "./components/Header-Maintenance";
+// import Header from "./components/Header";
+import HeaderMaintenance from "./components/Header-Maintenance";
 
 
 export const metadata = {
@@ -26,8 +26,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link rel="manifest" href="/site.webmanifest" />
       </head>
       <body className="bg-[#F1F1F1] text-[#21209C]">
-        {/* <HeaderMaintenance /> */}
-        <Header />
+        <HeaderMaintenance />
+        {/* <Header /> */}
           <main className="">{children}</main> {/* Render child pages */}
       </body>
     </html>

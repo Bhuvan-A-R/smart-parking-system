@@ -32,6 +32,7 @@ export function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/_next") ||
     request.nextUrl.pathname.startsWith("/favicon") ||
     request.nextUrl.pathname.startsWith("/android-chrome") ||
+    request.nextUrl.pathname.startsWith("/logo.png") ||
     request.nextUrl.pathname.startsWith("/apple-touch-icon") ||
     request.nextUrl.pathname.startsWith("/site.webmanifest")
   ) {
