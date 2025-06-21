@@ -17,10 +17,8 @@ const nextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: [
-      "http://localhost:5000",
-      "https://easy-parkers-sps.vercel.app/", // <-- add your production frontend URL here
-      "https://npx0wrxr-3000.inc1.devtunnels.ms:3000/"], // Proxy to backend
+        destination: 
+      "https://easy-parkers-sps.vercel.app/api/:path*" // Update this to your backend URL
       },
     ];
   },
