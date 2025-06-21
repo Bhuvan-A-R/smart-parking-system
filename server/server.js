@@ -19,7 +19,7 @@ const io = socketIo(server, {
     origin: [
       "http://localhost:3000",
       "https://easy-parkers-sps.vercel.app/", // <-- add your production frontend URL here
-      "https://easy-parkers-sps.vercel.app/"],
+      "https://npx0wrxr-3000.inc1.devtunnels.ms:3000/"],
     methods: ["GET", "POST"],
   },
 });
@@ -27,7 +27,7 @@ const io = socketIo(server, {
 // Allow requests from your frontend origin
 app.use(
   cors({
-    origin: ["http://localhost:3000", "https://easy-parkers-sps.vercel.app/"], // Allow requests from your frontend
+    origin: ["http://localhost:3000", "https://easy-parkers-sps.vercel.app:3000/", "https://npx0wrxr-3000.inc1.devtunnels.ms/"], // Allow requests from your frontend
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true, // Allow cookies to be sent with requests
